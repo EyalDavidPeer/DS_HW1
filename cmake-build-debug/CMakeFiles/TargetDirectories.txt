@@ -1,0 +1,3 @@
+C:/Users/eyalp/OneDrive/Desktop/School/Technion/Second_Year/Semster_A/Data Structures/HW1/cmake-build-debug/CMakeFiles/HW1.dir
+C:/Users/eyalp/OneDrive/Desktop/School/Technion/Second_Year/Semster_A/Data Structures/HW1/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/eyalp/OneDrive/Desktop/School/Technion/Second_Year/Semster_A/Data Structures/HW1/cmake-build-debug/CMakeFiles/rebuild_cache.dir
