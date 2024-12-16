@@ -10,4 +10,9 @@ add_executable(HW1
         main25a1.cpp
         plains25a1.cpp
         plains25a1.h
-        wet1util.h)
+        wet1util.h
+        Horse.h
+        Node.h
+        Herd.h
+        AVLTree.h
+        LinkedList.h)

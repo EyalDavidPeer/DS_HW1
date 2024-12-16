@@ -13,14 +13,16 @@
 #ifndef PLAINS25WINTER_WET1_H_
 #define PLAINS25WINTER_WET1_H_
 
+#include "Herd.h"
+#include "AVLTree.h"
 #include "wet1util.h"
 
 class Plains {
 private:
-    //
-    // Here you may add anything you want
-    //
-    
+    AVLTree<std::shared_ptr<Horse>> horses;
+    AVLTree<std::shared_ptr<Herd>> fullHerds;
+    AVLTree<std::shared_ptr<Herd>> emptyHerds;
+
 public:
     // <DO-NOT-MODIFY> {
     Plains();
