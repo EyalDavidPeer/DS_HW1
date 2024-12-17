@@ -2,6 +2,7 @@
 // However you need to implement all public Plains function, as provided below as a template
 
 #include "plains25a1.h"
+#include "HashSet.h"
 
 Plains::Plains() {
 
@@ -43,37 +44,35 @@ StatusType Plains::add_horse(int horseId, int speed) {
     if (horseId <= 0 || speed <= 0) {
         return StatusType::INVALID_INPUT;
     }
-//    std::shared_ptr<Horse> horse = std::make_shared<Horse>(horseId, speed);
 
-    // Check if the horse already exists in the tree
     if (horses.search(horseId)) {
-        return StatusType::FAILURE; // Horse already exists
+        return StatusType::FAILURE;
     }
-    std::shared_ptr<Horse> horse = std::make_shared<Horse>(horseId, speed);
-    // Insert the horse into the AVL tree
+    auto horse = std::make_shared<Horse>(horseId, speed);
+    if (!horse) {
+        return StatusType::ALLOCATION_ERROR;
+    }
+
     horses.insert(horse, horseId);
     return StatusType::SUCCESS;
 
 }
 
 StatusType Plains::join_herd(int horseId, int herdId) {
+
     if (horseId <= 0 || herdId <= 0) {
         return StatusType::INVALID_INPUT;
     }
-
     if (!horses.search(horseId)) {
-        printf("I'm here1\n");
         return StatusType::FAILURE;
     }
 
     if (!emptyHerds.search(herdId) && !fullHerds.search(herdId)) {
-        printf("I'm here2\n");
         return StatusType::FAILURE;
     }
 
-    std::shared_ptr<Horse> horseNode = horses.getValue(horseId);
-    if (!horseNode || horseNode->getHerdId() != -1) {
-        printf("I'm here3\n");
+    std::weak_ptr<Horse> horse = horses.getValue(horseId);
+    if (horse.lock()->getHerdId() != -1) {
         return StatusType::FAILURE;
     }
 
@@ -82,10 +81,13 @@ StatusType Plains::join_herd(int horseId, int herdId) {
     std::shared_ptr<Herd> herd = fullHerds.getValue(herdId);
     if (!herd) {
         herd = std::make_shared<Herd>(herdId);
+        if (!herd) {
+            return StatusType::ALLOCATION_ERROR;
+        }
         fullHerds.insert(herd, herdId);
     }
-    herd->insertHorse(horseNode);
-    horseNode->setHerdId(herdId);
+    herd->insertHorse(horse);
+    horse.lock()->setHerdId(herdId);
     // Update other necessary state, e.g., horse's herd membership if required
     return StatusType::SUCCESS;
 }
@@ -119,10 +121,18 @@ StatusType Plains::leave_herd(int horseId) {
     }
     auto herd = fullHerds.getValue(horse->getHerdId());
     herd->removeHorse(horse);
-    horses.remove(horseId);
+//    horses.remove(horseId);
     std::shared_ptr<Horse> newhorse = std::make_shared<Horse>(horseId,
                                                               horse->getSpeed());
-    horses.insert(newhorse, horseId);
+    auto horseNode = horses.getNode(horseId);
+    if (horseNode) {
+        horseNode->data.reset();
+        horseNode->data = newhorse;
+    }
+    if (!newhorse) {
+        return StatusType::ALLOCATION_ERROR;
+    }
+//    horses.insert(newhorse, horseId);
     if (herd->isEmpty()) {
         emptyHerds.insert(herd, herd->getId());
         fullHerds.remove(herd->getId());
@@ -146,16 +156,24 @@ output_t<bool> Plains::leads(int horseId, int otherHorseId) {
         return StatusType::INVALID_INPUT;
     }
 
-    LinkedList<weak_ptr<Horse>> visited;
-    auto horse = horses.getValue(otherHorseId);
-    for (auto it = horse->getFollowers().begin();
-         it != horse->getFollowers().end(); ++it) {
-        if (horseId == it.operator*().lock()->getId()) {
+    HashSet visited;
+    auto horse = horses.getValue(horseId);
+    auto destHorse = horses.getValue(otherHorseId);
+
+    if (!horse || !destHorse) { return StatusType::FAILURE; }
+    if (horse->getHerdId() !=
+        destHorse->getHerdId()) {
+        return false;
+    }
+    while (horse) {
+        if (visited.exists(horse->getId())) {
+            return false;
+        }
+        if (horse->getId() == otherHorseId) {
             return true;
         }
-        if (leads(horseId, it.operator*().lock()->getId()).ans()) {
-            return true;
-        }
+        visited.insert(horse->getId());
+        horse = horse->getLeadingHorse().lock();
     }
     return false;
 }
@@ -164,7 +182,6 @@ output_t<bool> Plains::can_run_together(int herdId) {
     if (herdId <= 0) {
         return StatusType::INVALID_INPUT;
     }
-
     auto herd = fullHerds.getValue(herdId);
     if (!herd) {
         return StatusType::FAILURE;
@@ -173,28 +190,30 @@ output_t<bool> Plains::can_run_together(int herdId) {
     if (herd->getNumberOfHorses() == 1) {
         return true;
     }
-
     SortedLinkedList<std::weak_ptr<Horse>> leaders;
     SortedLinkedList<std::weak_ptr<Horse>> leaders_assist;
+    HashSet visited;
     int leaderCounter = 0;
-
     for (auto it = herd->getHorses().begin();
          it != herd->getHorses().end(); ++it) {
         auto horse = it.operator*().lock();
         if (horse) {
+            if (visited.exists(horse->getId())) {
+                return false;
+            }
+            visited.insert(horse->getId());
             auto leadingHorse = horse->getLeadingHorse().lock();
             if (leadingHorse) {
                 leaderCounter++;
                 horse->getLeadingHorse().lock()->getId();
-//                printf("The leader is %d\n",
-//                       horse->getLeadingHorse().lock()->getId());
+
                 leaders.insert(it.operator*().lock()->getLeadingHorse(),
                                horse->getLeadingHorse().lock()->getId());
                 leaders_assist.insert(it.operator*().lock()->getLeadingHorse(),
                                       horse->getLeadingHorse().lock()->getId());
             }
         } else {
-            return StatusType::FAILURE; // Ensure invalid horses are handled
+            return false;
         }
     }
 
@@ -206,21 +225,24 @@ output_t<bool> Plains::can_run_together(int herdId) {
             leaders_assist.remove(it.operator*().lock()->getId());
         }
     }
-
     if (supremeLeaderCounter != 1) {
         return false;
     }
     if (leaderCounter - supremeLeaderCounter <= 0) {
         return false;
     }
-
+    HashSet visitedLeaders;
     int tempLeaderId = leaders_assist.begin().operator*().lock()->getId();
     for (auto it = leaders_assist.begin(); it != leaders_assist.end(); ++it) {
         auto currentLeader = it.operator*().lock();
         if (!currentLeader ||
-            tempLeaderId == currentLeader->getLeadingHorse().lock()->getId()) {
+            tempLeaderId == currentLeader->getLeadingHorse().lock()->getId() ||
+            visitedLeaders.exists(
+                    currentLeader->getLeadingHorse().lock()->getId())) {
             return false; // Handle circular references or invalid locks
         }
+        visitedLeaders.insert(currentLeader->getId());
+
     }
 
     return true;

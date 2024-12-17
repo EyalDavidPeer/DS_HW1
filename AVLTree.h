@@ -61,6 +61,7 @@ private:
             node->right = insert(node->right, key, index);
             node->right->parent = node;  // Set parent pointer of the right child
         } else {
+            node->data = key;  // Update existing key's value
             return node;
         }
 
@@ -214,7 +215,7 @@ private:
     void inorder(const AVLNode<T> *root) const {
         if (root != nullptr) {
             inorder(root->left);
-            cout << root->data << " ";
+            cout << root->key << " ";
             inorder(root->right);
         }
     }
@@ -231,6 +232,19 @@ private:
         return index < root->key ? search(root->left, index)
                                  : search(root->right, index);
     }
+
+    AVLNode<T> *getNode(AVLNode<T> *root, int index) {
+        if (root == nullptr) {
+            return nullptr;
+        } else if (root->key == index) {
+            return root;
+        } else if (index < root->key) {
+            return getNode(root->left, index);
+        } else {
+            return getNode(root->right, index);
+        }
+    }
+
 
     T getValue(AVLNode<T> *root, int index) {
         if (root == nullptr) {
@@ -267,6 +281,10 @@ public:
     // Function to get the value associated with a key
     T getValue(int index) {
         return getValue(m_root, index);
+    }
+
+    AVLNode<T> *getNode(int index) {
+        return getNode(m_root, index);
     }
 
     // Function to print the inorder traversal of the AVL tree
