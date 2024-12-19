@@ -9,12 +9,13 @@ struct Node {
     Node<T> *prev;
     T data;
 
+
 };
 
 template<typename T>
 class LinkedList {
     Node<T> *head;
-
+    Node<T> *tail;
     void deleteFromBeginning();
     void deleteFromEnd();
     void deleteFromPosition(int position);
@@ -62,7 +63,7 @@ public:
 
     Iterator begin() {
         return Iterator(
-                head); // Assuming getRoot() gives the root node of the AVL tree
+                head); // Assuming getRoot() gives the root node of the AVLTree tree
     }
 
     // End iterator for the end of the traversal
@@ -111,17 +112,20 @@ void LinkedList<T>::insertAtEnd(T value) {
     newNode->data = value;
     newNode->next = nullptr;
 
-    // If the list is empty, update the head to the new node
     if (!head) {
         head = newNode;
-        return;
+        tail = newNode;
+    } else {
+        tail->next = newNode;
+        newNode->prev = tail;
+        tail = newNode;
     }
 }
+
 
 template<typename T>
 void LinkedList<T>::insertAtPosition(T value, int position) {
     if (position < 1) {
-        std::cout << "Position should be >= 1." << std::endl;
         return;
     }
 
@@ -141,7 +145,6 @@ void LinkedList<T>::insertAtPosition(T value, int position) {
 
     // If the position is out of range, print an error message
     if (!temp) {
-        std::cout << "Position out of range." << std::endl;
         delete newNode;
         return;
     }

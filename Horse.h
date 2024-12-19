@@ -5,8 +5,9 @@
 #include "memory"
 #include "Node.h"
 #include "LinkedList.h"
+//#include "SortedLinkedList.h"
 
-#define NOTINHERD (-1)
+#define NOTINHERD -1
 
 class Horse {
     int m_horseId;
@@ -36,7 +37,7 @@ public:
     }
 
     void addFollower(std::weak_ptr<Horse> follower) {
-        m_followers.insert(std::move(follower), follower.lock()->getId());
+        m_followers.insert(follower, follower.lock()->getId());
     }
 
     void setLeaderHorse(std::weak_ptr<Horse> leader) {
@@ -61,6 +62,9 @@ public:
 
     // Remove follower in O(1)
     void removeFollower(std::weak_ptr<Horse> follower) {
+//        if(follower.lock()->getId() == 386407){
+//
+//        }
         m_followers.remove(
                 follower.lock()->getId());
     }

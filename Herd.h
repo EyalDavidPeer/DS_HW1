@@ -19,7 +19,7 @@ public:
         auto horseShared = horse.lock();
         if (!horseShared) { return; }
 
-        int horseId = horseShared->getId(); // Replace getId() with the appropriate method
+        int horseId = horseShared->getId();
         m_horses.insert(horse, horseId);
         n_herd++;
     }
@@ -43,21 +43,26 @@ public:
         }
 
         int horseId = horseShared->getId();
+        if (!m_horses.search(horseId)) {  // Ensure horse is in the list
+            return;
+        }
+
         m_horses.remove(horseId);
         n_herd--;
+//        if (horseId == 478719) {
+//            printf("After removal\n\n");
+//            getHorses().printInOrder();
+//        }
 
-        // Set the horse's leader and followers to nullptr (weak_ptr will expire)
+
+        // Handle leader-follower relationships safely
         if (auto leaderHorse = horseShared->getLeadingHorse().lock()) {
-            // Update the leader's followers list if necessary
             leaderHorse->removeFollower(horse);  // O(1) operation
         }
 
-        // Clear all followers' references in O(1)
         horseShared->clearFollowers();  // O(1) operation
-
-        // Optionally, set the horse's leader to nullptr as well
         horseShared->setLeaderToNull();  // O(1) operation
-        horseShared.reset();
+        horseShared.reset();  // Expire the weak pointer
 
     }
 

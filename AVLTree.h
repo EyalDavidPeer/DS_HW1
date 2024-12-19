@@ -5,7 +5,7 @@
 
 using namespace std;
 
-// Template class representing a node in the AVL tree
+// Template class representing a node in the AVLTree tree
 template<typename T>
 class AVLNode {
 public:
@@ -24,7 +24,7 @@ public:
 };
 
 
-// Template class representing the AVL tree
+// Template class representing the AVLTree tree
 template<typename T>
 class AVLTree {
 private:
@@ -48,20 +48,21 @@ private:
     }
 
     // Function to perform a right rotation on a subtree
-    AVLNode<T> *insert(AVLNode<T> *node, T key, int index) {
+    AVLNode<T> *insert(AVLNode<T> *node, T data, int index) {
         // Perform the normal BST insertion
         if (node == nullptr) {
-            return new AVLNode<T>(key, index);
+//            printf("The inserted horse should be: %d\n", index);
+            return new AVLNode<T>(data, index);
         }
 
         if (index < node->key) {
-            node->left = insert(node->left, key, index);
+            node->left = insert(node->left, data, index);
             node->left->parent = node;  // Set parent pointer of the left child
         } else if (index > node->key) {
-            node->right = insert(node->right, key, index);
+            node->right = insert(node->right, data, index);
             node->right->parent = node;  // Set parent pointer of the right child
         } else {
-            node->data = key;  // Update existing key's value
+            node->data = data;  // Update existing data's value
             return node;
         }
 
@@ -107,9 +108,12 @@ private:
         y->left = T2;
 
         // Update parent pointers
-        if (T2) { T2->parent = y; }
-        x->parent = y->parent;
+        if (T2) {
+            T2->parent = y;          // T2's parent is updated to y
+        }
+        x->parent = y->parent;       // x takes y's original parent
         y->parent = x;
+
 
         // Update heights
         y->height = max(height(y->left), height(y->right)) + 1;
@@ -127,9 +131,12 @@ private:
         x->right = T2;
 
         // Update parent pointers
-        if (T2) { T2->parent = x; }
-        y->parent = x->parent;
+        if (T2) {
+            T2->parent = x;          // T2's parent is updated to x
+        }
+        y->parent = x->parent;       // y takes x's original parent
         x->parent = y;
+
 
         // Update heights
         x->height = max(height(x->left), height(x->right)) + 1;
@@ -150,59 +157,57 @@ private:
 
     // Function to delete a data from the subtree rooted with root
     AVLNode<T> *deleteNode(AVLNode<T> *root, int index) {
-        if (root == nullptr) {
-            return nullptr;
-        }
+        if (root == nullptr) { return nullptr; }
 
-        // Perform standard BST deletion
         if (index < root->key) {
             root->left = deleteNode(root->left, index);
+            if (root->left) { root->left->parent = root; }
         } else if (index > root->key) {
             root->right = deleteNode(root->right, index);
+            if (root->right) { root->right->parent = root; }
         } else {
-            // Node with one child or no child
-            if (root->left == nullptr || root->right == nullptr) {
+            if (!root->left || !root->right) {
                 AVLNode<T> *temp = root->left ? root->left : root->right;
-                if (temp == nullptr) { // No child case
+
+                if (!temp) {
                     temp = root;
                     root = nullptr;
-                } else { // One child case
-                    *root = *temp;
+                } else {
+//                    *root = *temp;
+//                    root->parent = temp->parent;
+                    root->key = temp->key;
+                    root->data = temp->data;
+                    root->left = temp->left;
+                    root->right = temp->right;
+                    root->parent = temp->parent;
+                    if (temp->left) { temp->left->parent = root; }
+                    if (temp->right) { temp->right->parent = root; }
                 }
                 delete temp;
             } else {
-                // Node with two children
                 AVLNode<T> *temp = minValueNode(root->right);
-                root->data = temp->data; // Copy the inorder successor's value
+                root->key = temp->key;
+                root->data = temp->data;
                 root->right = deleteNode(root->right, temp->key);
+                if (root->right) { root->right->parent = root; }
             }
         }
 
-        // If the tree has only one node, return it
-        if (root == nullptr) {
-            return root;
-        }
+        if (!root) { return root; }
 
-        // Update height of the current node
         root->height = 1 + max(height(root->left), height(root->right));
 
-        // Get balance factor to check if the node became unbalanced
         int balance = balanceFactor(root);
-
-        // Perform rotations to balance the tree
         if (balance > 1 && balanceFactor(root->left) >= 0) {
             return rightRotate(root);
         }
-
         if (balance > 1 && balanceFactor(root->left) < 0) {
             root->left = leftRotate(root->left);
             return rightRotate(root);
         }
-
         if (balance < -1 && balanceFactor(root->right) <= 0) {
             return leftRotate(root);
         }
-
         if (balance < -1 && balanceFactor(root->right) > 0) {
             root->right = rightRotate(root->right);
             return leftRotate(root);
@@ -220,7 +225,7 @@ private:
         }
     }
 
-    // Function to search for a data in the subtree rooted with root
+    // Function to getValue for a data in the subtree rooted with root
     bool search(const AVLNode<T> *root, int index) const {
         if (root == nullptr) {
             return false;
@@ -258,27 +263,27 @@ private:
     }
 
 public:
-    // Constructor to initialize the AVL tree
+    // Constructor to initialize the AVLTree tree
     AVLTree()
             : m_root(nullptr) {
     }
 
-    // Function to insert a data into the AVL tree
+    // Function to insert a data into the AVLTree tree
     void insert(T key, int index) {
         m_root = insert(m_root, key, index);
     }
 
-    // Function to remove a data from the AVL tree
+    // Function to remove a data from the AVLTree tree
     void remove(int key) {
         m_root = deleteNode(m_root, key);
     }
 
-    // Function to search for a data in the AVL tree
+    // Function to getValue for a data in the AVLTree tree
     bool search(int key) {
         return search(m_root, key);
     }
 
-    // Function to get the value associated with a key
+    // Function to get the value associated with a data
     T getValue(int index) {
         return getValue(m_root, index);
     }
@@ -287,7 +292,7 @@ public:
         return getNode(m_root, index);
     }
 
-    // Function to print the inorder traversal of the AVL tree
+    // Function to print the inorder traversal of the AVLTree tree
     void printInorder() {
         inorder(m_root);
         cout << endl;

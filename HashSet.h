@@ -59,7 +59,7 @@ public:
         delete[] table;
     }
 
-    // Insert a key into the hash set
+    // Insert a data into the hash set
     void insert(int key) {
         if (exists(key)) { return; }  // Avoid duplicates
 
@@ -74,7 +74,7 @@ public:
         ++size;
     }
 
-    // Check if a key exists
+    // Check if a data exists
     bool exists(int key) const {
         int index = hash(key);
         Node *current = table[index];
@@ -83,5 +83,9 @@ public:
             current = current->next;
         }
         return false;
+    }
+
+    int getSize() {
+        return size;
     }
 };

@@ -2,10 +2,10 @@
 
 #include <iostream>
 #include "AVLTree.h"
+//#include "AVLTree_New.h"
 
 template<typename T>
 class SortedLinkedList {
-private:
     AVLTree<T> tree;
 
 public:
@@ -52,6 +52,10 @@ public:
         Iterator &operator++() {
             if (current) {
                 current = inorderSuccessor(current);
+                if (current == nullptr) {
+                    // End of the list, we can stop iteration here
+                    // This could also be handled by adjusting the `end()` iterator logic.
+                }
             }
             return *this;
         }
@@ -62,40 +66,44 @@ public:
     };
 
 
-    // Insert element in sorted order (leveraging AVL tree)
+    // Insert element in sorted order (leveraging AVLTree tree)
     void insert(T value, int index) {
-        tree.insert(value, index); // Insert the value into AVL tree
+        tree.insert(value, index); // Insert the value into AVLTree tree
     }
 
     // Remove node by index (O(log n) removal)
     void remove(int index) {
-        tree.remove(index); // Remove the node with this index from AVL tree
+//        if (index == 478719) {
+//            printf("\n\n\nStarting the removal\n\n\n");
+//        }
+        tree.remove(index); // Remove the node with this index from AVLTree tree
     }
 
-    // Search for a node by index (O(log n) search)
+    // Search for a node by index (O(log n) getValue)
     bool search(int index) {
-        return tree.search(index); // Search for the index in AVL tree
+        return tree.search(index); // Search for the index in AVLTree tree
     }
 
     // Retrieve the value associated with the index
     T getValue(int index) {
-        return tree.getValue(index); // Get the value from AVL tree by index
+        return tree.getValue(index); // Get the value from AVLTree tree by index
     }
 
-    // In-order traversal of the AVL tree (to print elements in sorted order)
+    // In-order traversal of the AVLTree tree (to print elements in sorted order)
     void printInOrder() {
-        tree.printInorder(); // Perform in-order traversal of the AVL tree
+        tree.printInorder(); // Perform in-order traversal of the AVLTree tree
     }
 
-    // Clear the tree (deletes all nodes in AVL tree)
+    // Clear the tree (deletes all nodes in AVLTree tree)
     void clear() {
         tree = AVLTree<T>(); // Reinitialize tree to clear all elements
     }
 
     Iterator begin() {
         return Iterator(
-                tree.getRoot()); // Assuming getRoot() gives the root node of the AVL tree
+                tree.getRoot()); // Assuming getRoot() gives the root node of the AVLTree tree
     }
+
 
     // End iterator for the end of the traversal
     Iterator end() {
