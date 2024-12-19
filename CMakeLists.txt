@@ -15,4 +15,8 @@ add_executable(HW1
         Node.h
         Herd.h
         AVLTree.h
-        LinkedList.h)
+        LinkedList.h
+        HashSet.h
+        Stack.h
+        AVLTree_New.h
+        SortedLinkedList.h)

@@ -21,25 +21,36 @@ public:
             return node;
         }
 
-        // Find the in-order successor
-        AVLNode<T> *inorderSuccessor(AVLNode<T> *node) {
-            if (node == nullptr) { return nullptr; }
-
-            if (node->right != nullptr) {
+        AVLNode<T> *findRightmostNode(AVLNode<T> *node) {
+            while (node && node->right != nullptr) {
                 node = node->right;
-                while (node->left != nullptr) {
+            }
+            return node;
+        }
+
+        AVLNode<T> *inorderSuccessor(AVLNode<T> *node) {
+            if (!node) { return nullptr; }
+
+            if (node->right) {
+                // The successor is the leftmost node in the right subtree
+                node = node->right;
+                while (node->left) {
                     node = node->left;
                 }
                 return node;
             }
 
+            // Traverse up using parent pointers
+
             AVLNode<T> *parent = node->parent;
-            while (parent != nullptr && node == parent->right) {
+            while (parent && node == parent->right) {
                 node = parent;
                 parent = parent->parent;
             }
-            return parent;
+
+            return parent; // May return nullptr if `node` was the last in-order node
         }
+
 
     public:
         explicit Iterator(AVLNode<T> *start) : current(
@@ -49,13 +60,19 @@ public:
             return current->data;
         }
 
+//        Iterator &operator++() {
+//            if (current) {
+//                current = inorderSuccessor(current);
+//                if (current == nullptr) {
+//                    // End of the list, we can stop iteration here
+//                    // This could also be handled by adjusting the `end()` iterator logic.
+//                }
+//            }
+//            return *this;
+//        }
         Iterator &operator++() {
             if (current) {
                 current = inorderSuccessor(current);
-                if (current == nullptr) {
-                    // End of the list, we can stop iteration here
-                    // This could also be handled by adjusting the `end()` iterator logic.
-                }
             }
             return *this;
         }

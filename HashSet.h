@@ -27,19 +27,21 @@ private:
 
         capacity *= 2;  // Double the table size
         table = new Node *[capacity]();
-        size = 0;  // Reset size (will be recalculated as we reinsert)
+        size = 0;
 
         // Reinsert all nodes into the new table
         for (int i = 0; i < oldCapacity; ++i) {
             Node *current = oldTable[i];
             while (current) {
-                insert(current->key);  // Reinsert into new table
+                insert(current->key);
                 Node *temp = current;
                 current = current->next;
                 delete temp;
             }
         }
-        delete[] oldTable;  // Free old table
+
+        // Delete the old table array
+        delete[] oldTable;
     }
 
 public:

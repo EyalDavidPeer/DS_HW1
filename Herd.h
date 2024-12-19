@@ -11,7 +11,6 @@ class Herd {
     int n_herd;
 public:
     explicit Herd(int herdId) : m_herdId(herdId), n_herd(0) {}
-
     int getId() const { return m_herdId; }
 
 

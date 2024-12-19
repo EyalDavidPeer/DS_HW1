@@ -3,12 +3,13 @@
 
 #include "plains25a1.h"
 #include "HashSet.h"
-#include "Stack.h"
 
 
 Plains::Plains() {}
 
-Plains::~Plains() {}
+Plains::~Plains() {
+
+}
 
 //TODO: Update logic for other Exceptions in all Methods
 StatusType Plains::add_herd(int herdId) {
@@ -70,7 +71,7 @@ StatusType Plains::join_herd(int horseId, int herdId) {
     }
 
 
-    std::weak_ptr<Horse> horse = horses.getValue(horseId);
+    std::weak_ptr <Horse> horse = horses.getValue(horseId);
     if (horse.lock()->getHerdId() != -1) {
         return StatusType::FAILURE;
     }
@@ -85,7 +86,7 @@ StatusType Plains::join_herd(int horseId, int herdId) {
 
     // Remove from emptyHerds and ensure the herd exists in fullHerds
     emptyHerds.remove(herdId);
-    std::shared_ptr<Herd> herd = fullHerds.getValue(herdId);
+    std::shared_ptr <Herd> herd = fullHerds.getValue(herdId);
 
 
     if (!herd) {
@@ -158,8 +159,8 @@ StatusType Plains::leave_herd(int horseId) {
 //    }
     herd->removeHorse(horse);
 //    horses.remove(horseId);
-    std::shared_ptr<Horse> newhorse = std::make_shared<Horse>(horseId,
-                                                              horse->getSpeed());
+    std::shared_ptr <Horse> newhorse = std::make_shared<Horse>(horseId,
+                                                               horse->getSpeed());
     auto horseNode = horses.getNode(horseId);
     if (horseNode) {
         horseNode->data.reset();
@@ -234,19 +235,20 @@ output_t<bool> Plains::can_run_together(int herdId) {
     HashSet visited;
     HashSet visited_firstCycle;
     int horseCount = 0;
-    std::shared_ptr<Horse> rootLeader = nullptr;
+    std::shared_ptr <Horse> rootLeader = nullptr;
     for (auto it = herd->getHorses().begin();
          it != herd->getHorses().end(); ++it) {
         horseCount++;
 
         auto horse = it.operator*().lock();
-
         if (horseCount > maxHorses) {
             break;
         }
         if (visited_firstCycle.exists(horse->getId())) {
             break;
         }
+
+
         visited_firstCycle.insert(horse->getId());
         auto leadingHorse = horse->getLeadingHorse().lock();
 
@@ -304,3 +306,4 @@ output_t<bool> Plains::can_run_together(int herdId) {
     }
     return true;
 }
+

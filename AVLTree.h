@@ -168,22 +168,16 @@ private:
         } else {
             if (!root->left || !root->right) {
                 AVLNode<T> *temp = root->left ? root->left : root->right;
-
-                if (!temp) {
-                    temp = root;
-                    root = nullptr;
-                } else {
-//                    *root = *temp;
-//                    root->parent = temp->parent;
-                    root->key = temp->key;
-                    root->data = temp->data;
-                    root->left = temp->left;
-                    root->right = temp->right;
-                    root->parent = temp->parent;
-                    if (temp->left) { temp->left->parent = root; }
-                    if (temp->right) { temp->right->parent = root; }
+                if (temp) { temp->parent = root->parent; } // Update child’s parent
+                if (root->parent) {
+                    if (root->parent->left ==
+                        root) { root->parent->left = temp; }
+                    else { root->parent->right = temp; }
                 }
-                delete temp;
+                delete root;
+                return temp;
+
+
             } else {
                 AVLNode<T> *temp = minValueNode(root->right);
                 root->key = temp->key;
@@ -225,6 +219,14 @@ private:
         }
     }
 
+//    void deleteinorder(AVLNode<T> *root) {
+//        if (root != nullptr) {
+//            inorder(root->left);
+//            delete root;
+//            inorder(root->right);
+//        }
+//    }
+
     // Function to getValue for a data in the subtree rooted with root
     bool search(const AVLNode<T> *root, int index) const {
         if (root == nullptr) {
@@ -262,6 +264,7 @@ private:
                                  : getValue(root->right, index);
     }
 
+
 public:
     // Constructor to initialize the AVLTree tree
     AVLTree()
@@ -297,6 +300,7 @@ public:
         inorder(m_root);
         cout << endl;
     }
+
 
     // Getter for root node for external access (e.g., in iterators)
     AVLNode<T> *getRoot() const {
