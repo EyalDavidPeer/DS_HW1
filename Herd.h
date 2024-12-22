@@ -11,6 +11,7 @@ class Herd {
     int n_herd;
 public:
     explicit Herd(int herdId) : m_herdId(herdId), n_herd(0) {}
+
     int getId() const { return m_herdId; }
 
 
@@ -27,7 +28,7 @@ public:
         return n_herd;
     }
 
-    SortedLinkedList<std::weak_ptr<Horse>> getHorses() {
+    SortedLinkedList<std::weak_ptr<Horse>> &getHorses() {
         return m_horses;
     }
 
@@ -46,13 +47,6 @@ public:
             return;
         }
 
-        m_horses.remove(horseId);
-        n_herd--;
-//        if (horseId == 478719) {
-//            printf("After removal\n\n");
-//            getHorses().printInOrder();
-//        }
-
 
         // Handle leader-follower relationships safely
         if (auto leaderHorse = horseShared->getLeadingHorse().lock()) {
@@ -61,7 +55,10 @@ public:
 
         horseShared->clearFollowers();  // O(1) operation
         horseShared->setLeaderToNull();  // O(1) operation
-        horseShared.reset();  // Expire the weak pointer
+//        horseShared.reset();  // Expire the weak pointer
+        m_horses.remove(horseId);
+        n_herd--;
+
 
     }
 

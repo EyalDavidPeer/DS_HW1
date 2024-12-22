@@ -1,38 +1,35 @@
 #pragma once
 
 #include <iostream>
+#include <memory>
 #include "AVLTree.h"
-//#include "AVLTree_New.h"
 
+// Template class representing a Sorted Linked List implemented using AVL Tree
 template<typename T>
 class SortedLinkedList {
     AVLTree<T> tree;
 
 public:
+    // Iterator for the Sorted Linked List
     class Iterator {
     private:
-        AVLNode<T> *current;
+        shared_ptr<AVLNode<T>> current;
 
         // Helper function to find the leftmost node in the subtree
-        AVLNode<T> *findLeftmostNode(AVLNode<T> *node) {
-            while (node && node->left != nullptr) {
+        shared_ptr<AVLNode<T>> findLeftmostNode(shared_ptr<AVLNode<T>> node) {
+            while (node && node->left) {
                 node = node->left;
             }
             return node;
         }
 
-        AVLNode<T> *findRightmostNode(AVLNode<T> *node) {
-            while (node && node->right != nullptr) {
-                node = node->right;
+        // Helper function to find the inorder successor of a node
+        shared_ptr<AVLNode<T>> inorderSuccessor(shared_ptr<AVLNode<T>> node) {
+            if (!node) {
+                return nullptr;
             }
-            return node;
-        }
-
-        AVLNode<T> *inorderSuccessor(AVLNode<T> *node) {
-            if (!node) { return nullptr; }
 
             if (node->right) {
-                // The successor is the leftmost node in the right subtree
                 node = node->right;
                 while (node->left) {
                     node = node->left;
@@ -41,35 +38,31 @@ public:
             }
 
             // Traverse up using parent pointers
-
-            AVLNode<T> *parent = node->parent;
+            auto parent = node->parent.lock();
             while (parent && node == parent->right) {
                 node = parent;
-                parent = parent->parent;
+                parent = parent->parent.lock();
             }
 
-            return parent; // May return nullptr if `node` was the last in-order node
+            return parent;
         }
-
 
     public:
-        explicit Iterator(AVLNode<T> *start) : current(
-                findLeftmostNode(start)) {}
+        explicit Iterator(shared_ptr<AVLNode<T>> start)
+                : current(findLeftmostNode(start)) {}
 
-        T &operator*() {
-            return current->data;
+        std::shared_ptr<typename T::element_type> operator*() {
+            if (!current) {
+                return nullptr;
+            }
+
+            auto shared = current->data.lock(); // Lock the weak pointer
+            if (!shared) {
+                throw std::runtime_error("Dereferenced expired weak_ptr");
+            }
+            return shared; // Return locked shared_ptr
         }
 
-//        Iterator &operator++() {
-//            if (current) {
-//                current = inorderSuccessor(current);
-//                if (current == nullptr) {
-//                    // End of the list, we can stop iteration here
-//                    // This could also be handled by adjusting the `end()` iterator logic.
-//                }
-//            }
-//            return *this;
-//        }
         Iterator &operator++() {
             if (current) {
                 current = inorderSuccessor(current);
@@ -82,49 +75,41 @@ public:
         }
     };
 
-
-    // Insert element in sorted order (leveraging AVLTree tree)
+    // Insert element in sorted order
     void insert(T value, int index) {
-        tree.insert(value, index); // Insert the value into AVLTree tree
+        tree.insert(value, index);
     }
 
-    // Remove node by index (O(log n) removal)
+    // Remove node by index
     void remove(int index) {
-//        if (index == 478719) {
-//            printf("\n\n\nStarting the removal\n\n\n");
-//        }
-        tree.remove(index); // Remove the node with this index from AVLTree tree
+        tree.remove(index);
     }
 
-    // Search for a node by index (O(log n) getValue)
+    // Search for a node by index
     bool search(int index) {
-        return tree.search(index); // Search for the index in AVLTree tree
+        return tree.search(index);
     }
 
     // Retrieve the value associated with the index
     T getValue(int index) {
-        return tree.getValue(index); // Get the value from AVLTree tree by index
+        return tree.getValue(index);
     }
 
-    // In-order traversal of the AVLTree tree (to print elements in sorted order)
+    // In-order traversal of the AVL tree
     void printInOrder() {
-        tree.printInorder(); // Perform in-order traversal of the AVLTree tree
+        tree.printInorder();
     }
 
-    // Clear the tree (deletes all nodes in AVLTree tree)
+    // Clear the tree
     void clear() {
-        tree = AVLTree<T>(); // Reinitialize tree to clear all elements
+        tree = AVLTree<T>();
     }
 
     Iterator begin() {
-        return Iterator(
-                tree.getRoot()); // Assuming getRoot() gives the root node of the AVLTree tree
+        return Iterator(tree.getRoot());
     }
 
-
-    // End iterator for the end of the traversal
     Iterator end() {
-        return Iterator(
-                nullptr); // End is represented by a nullptr (after the last element)
+        return Iterator(nullptr);
     }
 };

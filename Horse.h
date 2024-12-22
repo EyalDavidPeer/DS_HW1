@@ -5,7 +5,6 @@
 #include "memory"
 #include "Node.h"
 #include "LinkedList.h"
-//#include "SortedLinkedList.h"
 
 #define NOTINHERD -1
 
@@ -14,12 +13,14 @@ class Horse {
     int m_herdId;
     int m_speed;
     int m_herdPos;
+    int m_followCycle;
     std::weak_ptr<Horse> m_leadingHorse;
     SortedLinkedList<std::weak_ptr<Horse>> m_followers;
 
 public:
     Horse(int horseId, int speed) : m_horseId(horseId), m_herdId(-1),
-                                    m_speed(speed), m_herdPos(NOTINHERD) {}
+                                    m_speed(speed), m_herdPos(NOTINHERD),
+                                    m_followCycle(NOTINHERD) {}
 
 
     int getId() const { return m_horseId; }
@@ -56,15 +57,24 @@ public:
         m_followers.clear();  // Assuming clear works in O(1) for your LinkedList structure
     }
 
+    int getHerdPosition() const { return m_herdPos; }
+
+    void setHerdPosition(int inorderPosition) {
+        m_herdPos = inorderPosition;
+    }
+
+    int getFollowCycle() const { return m_followCycle; }
+
+    void setFollowCycle(int followCycle) {
+        m_followCycle = followCycle;
+    }
+
     void setLeaderToNull() {
         m_leadingHorse.reset();
     }
 
     // Remove follower in O(1)
     void removeFollower(std::weak_ptr<Horse> follower) {
-//        if(follower.lock()->getId() == 386407){
-//
-//        }
         m_followers.remove(
                 follower.lock()->getId());
     }

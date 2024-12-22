@@ -2,7 +2,6 @@
 // However you need to implement all public Plains function, as provided below as a template
 
 #include "plains25a1.h"
-#include "HashSet.h"
 
 
 Plains::Plains() {}
@@ -70,23 +69,13 @@ StatusType Plains::join_herd(int horseId, int herdId) {
         return StatusType::FAILURE;
     }
 
-
-    std::weak_ptr <Horse> horse = horses.getValue(horseId);
+    std::weak_ptr<Horse> horse = horses.getValue(horseId);
     if (horse.lock()->getHerdId() != -1) {
         return StatusType::FAILURE;
     }
-//    if (herdId == 512080) {
-//        auto herd = fullHerds.getValue(herdId);
-//        if (herd) {
-//            herd->getHorses().printInOrder();
-//            printf("The number of horses is: %d\n", herd->getNumberOfHorses());
-//        }
-//    }
-
-
     // Remove from emptyHerds and ensure the herd exists in fullHerds
     emptyHerds.remove(herdId);
-    std::shared_ptr <Herd> herd = fullHerds.getValue(herdId);
+    std::shared_ptr<Herd> herd = fullHerds.getValue(herdId);
 
 
     if (!herd) {
@@ -143,24 +132,10 @@ StatusType Plains::leave_herd(int horseId) {
     }
 
     auto herd = fullHerds.getValue(horse->getHerdId());
-//    if (horse->getHerdId() == 512080 && horseId == 478719) {
-//        herd->getHorses().printInOrder();
-//        printf("The number of horses is: %d\n", herd->getNumberOfHorses());
-//        printf("His followers are:\n");
-//        horse->getFollowers().printInOrder();
-//        if (horse->getLeadingHorse().lock()) {
-//            printf("His leader is: %d\n",
-//                   horse->getLeadingHorse().lock()->getId());
-//            printf("His leaders are:\n");
-//            horse->getLeadingHorse().lock()->getFollowers().printInOrder();
-//        }
 
-
-//    }
     herd->removeHorse(horse);
-//    horses.remove(horseId);
-    std::shared_ptr <Horse> newhorse = std::make_shared<Horse>(horseId,
-                                                               horse->getSpeed());
+    std::shared_ptr<Horse> newhorse = std::make_shared<Horse>(horseId,
+                                                              horse->getSpeed());
     auto horseNode = horses.getNode(horseId);
     if (horseNode) {
         horseNode->data.reset();
@@ -169,12 +144,11 @@ StatusType Plains::leave_herd(int horseId) {
     if (!newhorse) {
         return StatusType::ALLOCATION_ERROR;
     }
-//    horses.insert(newhorse, horseId);
+
     if (herd->isEmpty()) {
         emptyHerds.insert(herd, herd->getId());
         fullHerds.remove(herd->getId());
     }
-
 
     return StatusType::SUCCESS;
 }
@@ -187,14 +161,14 @@ output_t<int> Plains::get_speed(int horseId) {
     if (!horse) {
         return StatusType::FAILURE;
     }
-    return output_t<int>(horse->getSpeed());
+    return horse->getSpeed();
 }
 
 output_t<bool> Plains::leads(int horseId, int otherHorseId) {
+    static int followCycle = 0;
     if (horseId <= 0 || otherHorseId <= 0 || horseId == otherHorseId) {
         return StatusType::INVALID_INPUT;
     }
-    HashSet visited;
     auto horse = horses.getValue(horseId);
     auto destHorse = horses.getValue(otherHorseId);
 
@@ -203,21 +177,20 @@ output_t<bool> Plains::leads(int horseId, int otherHorseId) {
         destHorse->getHerdId()) {
         return false;
     }
+    followCycle++;
     while (horse) {
-        if (visited.exists(horse->getId())) {
+        if (horse->getFollowCycle() == followCycle) {
             return false;
         }
         if (horse->getId() == otherHorseId) {
             return true;
         }
-        visited.insert(horse->getId());
+        horse->setFollowCycle(followCycle);
         horse = horse->getLeadingHorse().lock();
     }
     return false;
 }
 
-//TODO: replace HaseSet with Hist
-//TODO: fixing the Iterator in edge cases
 output_t<bool> Plains::can_run_together(int herdId) {
     if (herdId <= 0) {
         return StatusType::INVALID_INPUT;
@@ -227,76 +200,86 @@ output_t<bool> Plains::can_run_together(int herdId) {
     if (!herd) {
         return StatusType::FAILURE;
     }
-
-    if (herd->getNumberOfHorses() == 1) {
-        return true; // A single horse can always run together
+    int maxHorses = herd->getNumberOfHorses();
+    if (maxHorses == 1) {
+        return true;
     }
-    int maxHorses = herd->getNumberOfHorses(); // Use a regular int variable
-    HashSet visited;
-    HashSet visited_firstCycle;
+    int *visited = new int[maxHorses]();
+    int *visited_firstCycle = new int[maxHorses]();
+
+
     int horseCount = 0;
-    std::shared_ptr <Horse> rootLeader = nullptr;
+    int i = 0;
+    std::shared_ptr<Horse> rootLeader = nullptr;
+    for (auto it = herd->getHorses().begin();
+         it != herd->getHorses().end(); ++it) {
+        auto horse = it.operator*();
+        horse->setHerdPosition(i);
+        visited[i] = 0;
+        visited_firstCycle[i] = 0;
+        i++;
+    }
+
     for (auto it = herd->getHorses().begin();
          it != herd->getHorses().end(); ++it) {
         horseCount++;
 
-        auto horse = it.operator*().lock();
+        auto horse = it.operator*();
         if (horseCount > maxHorses) {
+            delete[] visited;
+            delete[] visited_firstCycle;
             break;
         }
-        if (visited_firstCycle.exists(horse->getId())) {
+        if (visited_firstCycle[horse->getHerdPosition()] > 0) {
+            delete[] visited;
+            delete[] visited_firstCycle;
             break;
         }
-
-
-        visited_firstCycle.insert(horse->getId());
+        visited_firstCycle[horse->getHerdPosition()]++;
         auto leadingHorse = horse->getLeadingHorse().lock();
-
         if (!leadingHorse) {
             if (rootLeader) {
+                delete[] visited;
+                delete[] visited_firstCycle;
                 return false; // More than one horse has no leader
             }
-
             rootLeader = horse;
         }
     }
 
-
     if (!rootLeader) {
+        delete[] visited;
+        delete[] visited_firstCycle;
         return false;
     }
 
-    if (maxHorses == 2) {
-        return true;
-    }
-    visited.insert(rootLeader->getId());
+    visited[rootLeader->getHerdPosition()]++;
     int cycle = -1;
     for (auto it = herd->getHorses().begin();
          it != herd->getHorses().end(); ++it) {
-
-        if (visited.getSize() == maxHorses) {
-            return true;
-        }
-        auto horse = it.operator*().lock();
+        
+        auto horse = it.operator*();
         if (!horse) {
             continue; // Skip if `horse` is null
         }
-        if (horse->getId() == rootLeader->getId() || visited.exists(
-                horse->getId())) {
+        if (horse->getId() == rootLeader->getId() ||
+            visited[horse->getHerdPosition()] > 0) {
 
-        } else if (!visited.exists(
-                horse->getId()) &&
-                   visited.exists(horse->getLeadingHorse().lock()->getId())) {
-            visited.insert(horse->getId());
+        } else if (!(visited[horse->getHerdPosition()] > 0) &&
+                   visited[horse->getLeadingHorse().lock()->getHerdPosition()] >
+                   0) {
+            visited[horse->getHerdPosition()]++;
         } else {
-            auto tempHorse = it.operator*().lock();
+            auto tempHorse = it.operator*();
             while (tempHorse->getId() !=
                    rootLeader->getId()) {
-                if (!visited.exists(tempHorse->getId())) {
-                    visited.insert(tempHorse->getId());
+                if (!(visited[tempHorse->getHerdPosition()] > 0)) {
+                    visited[tempHorse->getHerdPosition()]++;
                 }
                 tempHorse = tempHorse->getLeadingHorse().lock();
                 if (cycle > maxHorses * 2) {
+                    delete[] visited;
+                    delete[] visited_firstCycle;
                     return false;
                 }
                 cycle++;
@@ -304,6 +287,8 @@ output_t<bool> Plains::can_run_together(int herdId) {
         }
 
     }
+    delete[] visited;
+    delete[] visited_firstCycle;
     return true;
 }
 
