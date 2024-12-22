@@ -14,14 +14,16 @@
 #define PLAINS25WINTER_WET1_H_
 
 #include "Herd.h"
-#include "AVLTree.h"
 #include "wet1util.h"
+#include "Histogram.h"
+
 
 class Plains {
 private:
     AVLTree<std::shared_ptr<Horse>> horses;
     AVLTree<std::shared_ptr<Herd>> fullHerds;
     AVLTree<std::shared_ptr<Herd>> emptyHerds;
+    int leadsCycle;
 
 public:
     // <DO-NOT-MODIFY> {

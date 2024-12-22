@@ -3,14 +3,12 @@
 
 #include "plains25a1.h"
 
-
-Plains::Plains() {}
+Plains::Plains() : leadsCycle(0) {}
 
 Plains::~Plains() {
 
 }
 
-//TODO: Update logic for other Exceptions in all Methods
 StatusType Plains::add_herd(int herdId) {
     if (herdId <= 0) {
         return StatusType::INVALID_INPUT;
@@ -73,7 +71,6 @@ StatusType Plains::join_herd(int horseId, int herdId) {
     if (horse.lock()->getHerdId() != -1) {
         return StatusType::FAILURE;
     }
-    // Remove from emptyHerds and ensure the herd exists in fullHerds
     emptyHerds.remove(herdId);
     std::shared_ptr<Herd> herd = fullHerds.getValue(herdId);
 
@@ -88,8 +85,6 @@ StatusType Plains::join_herd(int horseId, int herdId) {
     herd->insertHorse(horse);
     horse.lock()->setHerdId(herdId);
 
-
-    // Update other necessary state, e.g., horse's herd membership if required
     return StatusType::SUCCESS;
 }
 
@@ -111,12 +106,8 @@ StatusType Plains::follow(int horseId, int horseToFollowId) {
         leaderHorse->addFollower(followingHorse);
     }
     if (formerLeader) {
-        // Ensure formerLeader and followingHorse are valid
-
         formerLeader->removeFollower(followingHorse);
     }
-
-    // Set the new leader and update follower list
 
     return StatusType::SUCCESS;
 }
@@ -136,13 +127,13 @@ StatusType Plains::leave_herd(int horseId) {
     herd->removeHorse(horse);
     std::shared_ptr<Horse> newhorse = std::make_shared<Horse>(horseId,
                                                               horse->getSpeed());
+    if (!newhorse) {
+        return StatusType::ALLOCATION_ERROR;
+    }
     auto horseNode = horses.getNode(horseId);
     if (horseNode) {
         horseNode->data.reset();
         horseNode->data = newhorse;
-    }
-    if (!newhorse) {
-        return StatusType::ALLOCATION_ERROR;
     }
 
     if (herd->isEmpty()) {
@@ -165,7 +156,6 @@ output_t<int> Plains::get_speed(int horseId) {
 }
 
 output_t<bool> Plains::leads(int horseId, int otherHorseId) {
-    static int followCycle = 0;
     if (horseId <= 0 || otherHorseId <= 0 || horseId == otherHorseId) {
         return StatusType::INVALID_INPUT;
     }
@@ -177,15 +167,15 @@ output_t<bool> Plains::leads(int horseId, int otherHorseId) {
         destHorse->getHerdId()) {
         return false;
     }
-    followCycle++;
+    leadsCycle++;
     while (horse) {
-        if (horse->getFollowCycle() == followCycle) {
+        if (horse->getFollowCycle() == leadsCycle) {
             return false;
         }
         if (horse->getId() == otherHorseId) {
             return true;
         }
-        horse->setFollowCycle(followCycle);
+        horse->setFollowCycle(leadsCycle);
         horse = horse->getLeadingHorse().lock();
     }
     return false;
@@ -204,9 +194,9 @@ output_t<bool> Plains::can_run_together(int herdId) {
     if (maxHorses == 1) {
         return true;
     }
-    int *visited = new int[maxHorses]();
-    int *visited_firstCycle = new int[maxHorses]();
 
+    Histogram visited(maxHorses);
+    Histogram visited_firstCycle(maxHorses);
 
     int horseCount = 0;
     int i = 0;
@@ -226,30 +216,23 @@ output_t<bool> Plains::can_run_together(int herdId) {
 
         auto horse = it.operator*();
         if (horseCount > maxHorses) {
-            delete[] visited;
-            delete[] visited_firstCycle;
             break;
         }
         if (visited_firstCycle[horse->getHerdPosition()] > 0) {
-            delete[] visited;
-            delete[] visited_firstCycle;
             break;
         }
         visited_firstCycle[horse->getHerdPosition()]++;
         auto leadingHorse = horse->getLeadingHorse().lock();
         if (!leadingHorse) {
             if (rootLeader) {
-                delete[] visited;
-                delete[] visited_firstCycle;
-                return false; // More than one horse has no leader
+                return false;
             }
             rootLeader = horse;
         }
     }
 
     if (!rootLeader) {
-        delete[] visited;
-        delete[] visited_firstCycle;
+
         return false;
     }
 
@@ -257,10 +240,10 @@ output_t<bool> Plains::can_run_together(int herdId) {
     int cycle = -1;
     for (auto it = herd->getHorses().begin();
          it != herd->getHorses().end(); ++it) {
-        
+
         auto horse = it.operator*();
         if (!horse) {
-            continue; // Skip if `horse` is null
+            continue;
         }
         if (horse->getId() == rootLeader->getId() ||
             visited[horse->getHerdPosition()] > 0) {
@@ -278,8 +261,6 @@ output_t<bool> Plains::can_run_together(int herdId) {
                 }
                 tempHorse = tempHorse->getLeadingHorse().lock();
                 if (cycle > maxHorses * 2) {
-                    delete[] visited;
-                    delete[] visited_firstCycle;
                     return false;
                 }
                 cycle++;
@@ -287,8 +268,6 @@ output_t<bool> Plains::can_run_together(int herdId) {
         }
 
     }
-    delete[] visited;
-    delete[] visited_firstCycle;
     return true;
 }
 

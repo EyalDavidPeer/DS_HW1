@@ -6,7 +6,7 @@
 #include "Node.h"
 #include "LinkedList.h"
 
-#define NOTINHERD -1
+#define INITVALUE -1
 
 class Horse {
     int m_horseId;
@@ -18,77 +18,39 @@ class Horse {
     SortedLinkedList<std::weak_ptr<Horse>> m_followers;
 
 public:
-    Horse(int horseId, int speed) : m_horseId(horseId), m_herdId(-1),
-                                    m_speed(speed), m_herdPos(NOTINHERD),
-                                    m_followCycle(NOTINHERD) {}
+    Horse(int horseId, int speed);
 
 
-    int getId() const { return m_horseId; }
+    int getId() const;
 
-    void setHerdId(int herdId) {
-        m_herdId = herdId;
-    }
+    void setHerdId(int herdId);
 
-    SortedLinkedList<std::weak_ptr<Horse>> getFollowers() {
-        return m_followers;
-    }
+    SortedLinkedList<std::weak_ptr<Horse>> getFollowers();
 
-    std::weak_ptr<Horse> getLeadingHorse() {
-        return m_leadingHorse;
-    }
+    std::weak_ptr<Horse> getLeadingHorse();
 
-    void addFollower(std::weak_ptr<Horse> follower) {
-        m_followers.insert(follower, follower.lock()->getId());
-    }
+    void addFollower(const std::weak_ptr<Horse> &follower);
 
-    void setLeaderHorse(std::weak_ptr<Horse> leader) {
-        m_leadingHorse = leader;
-    }
+    void setLeaderHorse(std::weak_ptr<Horse> leader);
 
-    int getHerdId() const { return m_herdId; }
+    int getHerdId() const;
 
-    bool isInHerd() {
-        return m_herdId != NOTINHERD;
-    }
+    bool isInHerd();
 
-    int getSpeed() const { return m_speed; }
+    int getSpeed() const;
 
-    void clearFollowers() {
-        m_followers.clear();  // Assuming clear works in O(1) for your LinkedList structure
-    }
+    void clearFollowers();
 
-    int getHerdPosition() const { return m_herdPos; }
+    int getHerdPosition() const;
 
-    void setHerdPosition(int inorderPosition) {
-        m_herdPos = inorderPosition;
-    }
+    void setHerdPosition(int inorderPosition);
 
-    int getFollowCycle() const { return m_followCycle; }
+    int getFollowCycle() const;
 
-    void setFollowCycle(int followCycle) {
-        m_followCycle = followCycle;
-    }
+    void setFollowCycle(int followCycle);
 
-    void setLeaderToNull() {
-        m_leadingHorse.reset();
-    }
+    void setLeaderToNull();
 
-    // Remove follower in O(1)
-    void removeFollower(std::weak_ptr<Horse> follower) {
-        m_followers.remove(
-                follower.lock()->getId());
-    }
+    void removeFollower(const std::weak_ptr<Horse> &follower);
 
-//TODO: Reduce the duplications
-    bool operator<(const Horse &other) const {
-        return m_horseId < other.m_horseId;
-    }
-
-    bool operator>(const Horse &other) const {
-        return m_horseId > other.m_horseId;
-    }
-
-    bool operator==(const Horse &other) const {
-        return m_horseId == other.m_horseId;
-    }
 };
