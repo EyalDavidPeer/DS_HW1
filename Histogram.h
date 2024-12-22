@@ -3,7 +3,7 @@
 #include <iostream>
 
 class Histogram {
-    int n;
+    int m_n;
     int *m_hist;
 public:
     explicit Histogram(int n);
@@ -17,5 +17,5 @@ public:
     Histogram(const Histogram &other);
 
     Histogram &operator=(const Histogram &other);
-    
+
 };

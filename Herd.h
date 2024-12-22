@@ -8,7 +8,7 @@
 class Herd {
     int m_herdId;
     SortedLinkedList<std::weak_ptr<Horse>> m_horses;
-    int n_herd;
+    int m_n_herd;
 public:
     explicit Herd(int herdId);
 

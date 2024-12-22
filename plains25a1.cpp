@@ -3,7 +3,7 @@
 
 #include "plains25a1.h"
 
-Plains::Plains() : leadsCycle(0) {}
+Plains::Plains() : m_leadsCycle(0) {}
 
 Plains::~Plains() {
 
@@ -167,15 +167,15 @@ output_t<bool> Plains::leads(int horseId, int otherHorseId) {
         destHorse->getHerdId()) {
         return false;
     }
-    leadsCycle++;
+    m_leadsCycle++;
     while (horse) {
-        if (horse->getFollowCycle() == leadsCycle) {
+        if (horse->getFollowCycle() == m_leadsCycle) {
             return false;
         }
         if (horse->getId() == otherHorseId) {
             return true;
         }
-        horse->setFollowCycle(leadsCycle);
+        horse->setFollowCycle(m_leadsCycle);
         horse = horse->getLeadingHorse().lock();
     }
     return false;

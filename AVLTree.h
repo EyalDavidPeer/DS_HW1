@@ -6,30 +6,26 @@
 
 using namespace std;
 
-// Template class representing a node in the AVLTree tree
 template<typename T>
 class AVLNode {
 public:
     int key;
     T data;
-    shared_ptr<AVLNode<T>> left;  // Changed to shared_ptr
-    shared_ptr<AVLNode<T>> right; // Changed to shared_ptr
+    shared_ptr<AVLNode<T>> left;
+    shared_ptr<AVLNode<T>> right;
     int height;
-    weak_ptr<AVLNode<T>> parent;  // Changed to weak_ptr to avoid circular reference
+    weak_ptr<AVLNode<T>> parent;
 
-    // Constructor to initialize a node with a given data
     AVLNode(T k, int index)
             : key(index), data(k), left(nullptr), right(nullptr), height(1) {
     }
 };
 
-// Template class representing the AVLTree tree
 template<typename T>
 class AVLTree {
 private:
-    shared_ptr<AVLNode<T>> m_root;  // Changed to shared_ptr
+    shared_ptr<AVLNode<T>> m_root;
 
-    // Function to get the height of a node
     int height(const shared_ptr<AVLNode<T>> &node) {
         if (!node) {
             return 0;
@@ -37,7 +33,6 @@ private:
         return node->height;
     }
 
-    // Function to get the balance factor of a node
     int balanceFactor(const shared_ptr<AVLNode<T>> &node) {
         if (!node) {
             return 0;
@@ -66,23 +61,19 @@ private:
 
         int balance = balanceFactor(node);
 
-        // Left Left Case
         if (balance > 1 && index < node->left->key) {
             return rightRotate(node);
         }
 
-        // Right Right Case
         if (balance < -1 && index > node->right->key) {
             return leftRotate(node);
         }
 
-        // Left Right Case
         if (balance > 1 && index > node->left->key) {
             node->left = leftRotate(node->left);
             return rightRotate(node);
         }
 
-        // Right Left Case
         if (balance < -1 && index < node->right->key) {
             node->right = rightRotate(node->right);
             return leftRotate(node);
@@ -186,23 +177,19 @@ private:
 
         int balance = balanceFactor(root);
 
-        // Left Left Case
         if (balance > 1 && balanceFactor(root->left) >= 0) {
             return rightRotate(root);
         }
 
-        // Left Right Case
         if (balance > 1 && balanceFactor(root->left) < 0) {
             root->left = leftRotate(root->left);
             return rightRotate(root);
         }
 
-        // Right Right Case
         if (balance < -1 && balanceFactor(root->right) <= 0) {
             return leftRotate(root);
         }
 
-        // Right Left Case
         if (balance < -1 && balanceFactor(root->right) > 0) {
             root->right = rightRotate(root->right);
             return leftRotate(root);
@@ -211,13 +198,6 @@ private:
         return root;
     }
 
-    void inorder(const shared_ptr<AVLNode<T>> &root) const {
-        if (root) {
-            inorder(root->left);
-            cout << root->key << " ";
-            inorder(root->right);
-        }
-    }
 
     bool search(const shared_ptr<AVLNode<T>> &root, int index) const {
         if (!root) {
@@ -258,13 +238,13 @@ public:
 
     void insert(T key, int index) {
         m_root = insert(m_root, key, index);
-        m_root->parent.reset();  // Root has no parent
+        m_root->parent.reset();
     }
 
     void remove(int key) {
         m_root = deleteNode(m_root, key);
         if (m_root) {
-            m_root->parent.reset();  // Update root's parent after deletion
+            m_root->parent.reset();
         }
     }
 
@@ -280,14 +260,7 @@ public:
         return getNode(m_root, index);
     }
 
-    void printInorder() {
-        inorder(m_root);
-        cout << endl;
-    }
-
     shared_ptr<AVLNode<T>> getRoot() const {
         return m_root;
     }
-
-    // Destructor is not needed anymore as shared_ptr will handle cleanup
 };

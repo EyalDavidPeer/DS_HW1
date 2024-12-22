@@ -1,6 +1,6 @@
 #include "Herd.h"
 
-Herd::Herd(int herdId) : m_herdId(herdId), n_herd(0) {}
+Herd::Herd(int herdId) : m_herdId(herdId), m_n_herd(0) {}
 
 int Herd::getId() const { return m_herdId; }
 
@@ -10,11 +10,11 @@ void Herd::insertHorse(const std::weak_ptr<Horse> &horse) {
 
     int horseId = horseShared->getId();
     m_horses.insert(horse, horseId);
-    n_herd++;
+    m_n_herd++;
 }
 
 int Herd::getNumberOfHorses() {
-    return n_herd;
+    return m_n_herd;
 }
 
 SortedLinkedList<std::weak_ptr<Horse>> &Herd::getHorses() {
@@ -22,7 +22,7 @@ SortedLinkedList<std::weak_ptr<Horse>> &Herd::getHorses() {
 }
 
 bool Herd::isEmpty() {
-    return n_herd == 0;
+    return m_n_herd == 0;
 }
 
 void Herd::removeHorse(const std::weak_ptr<Horse> &horse) {
@@ -43,7 +43,7 @@ void Herd::removeHorse(const std::weak_ptr<Horse> &horse) {
     horseShared->clearFollowers();
     horseShared->setLeaderToNull();
     m_horses.remove(horseId);
-    n_herd--;
+    m_n_herd--;
 
 
 }

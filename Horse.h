@@ -20,7 +20,6 @@ class Horse {
 public:
     Horse(int horseId, int speed);
 
-
     int getId() const;
 
     void setHerdId(int herdId);
