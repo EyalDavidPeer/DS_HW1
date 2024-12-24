@@ -5,9 +5,7 @@
 
 Plains::Plains() : m_leadsCycle(0) {}
 
-Plains::~Plains() {
-
-}
+Plains::~Plains() = default;
 
 StatusType Plains::add_herd(int herdId) {
     if (herdId <= 0) {
@@ -17,8 +15,13 @@ StatusType Plains::add_herd(int herdId) {
     if (emptyHerds.search(herdId) || fullHerds.search(herdId)) {
         return StatusType::FAILURE;
     }
-    auto herd = std::make_shared<Herd>(herdId);
-    emptyHerds.insert(herd, herdId);
+    std::shared_ptr<Herd> herd;
+    try {
+        herd = std::make_shared<Herd>(herdId);
+        emptyHerds.insert(herd, herdId);
+    } catch (const std::bad_alloc &) {
+        return StatusType::ALLOCATION_ERROR;
+    }
 
     return StatusType::SUCCESS;
 }
@@ -31,7 +34,11 @@ StatusType Plains::remove_herd(int herdId) {
     if (!emptyHerds.search(herdId)) {
         return StatusType::FAILURE;
     }
-    emptyHerds.remove(herdId);
+    try {
+        emptyHerds.remove(herdId);
+    } catch (const std::bad_alloc &) {
+        return StatusType::ALLOCATION_ERROR;
+    }
     return StatusType::SUCCESS;
 
 }
@@ -44,12 +51,14 @@ StatusType Plains::add_horse(int horseId, int speed) {
     if (horses.search(horseId)) {
         return StatusType::FAILURE;
     }
-    auto horse = std::make_shared<Horse>(horseId, speed);
-    if (!horse) {
+
+    try {
+        auto horse = std::make_shared<Horse>(horseId, speed);
+        horses.insert(horse, horseId);
+    } catch (const std::bad_alloc &) {
         return StatusType::ALLOCATION_ERROR;
     }
 
-    horses.insert(horse, horseId);
     return StatusType::SUCCESS;
 
 }
@@ -71,19 +80,26 @@ StatusType Plains::join_herd(int horseId, int herdId) {
     if (horse.lock()->getHerdId() != -1) {
         return StatusType::FAILURE;
     }
-    emptyHerds.remove(herdId);
     std::shared_ptr<Herd> herd = fullHerds.getValue(herdId);
 
-
     if (!herd) {
-        herd = std::make_shared<Herd>(herdId);
-        if (!herd) {
+        try {
+            emptyHerds.remove(herdId);
+            herd = std::make_shared<Herd>(herdId);
+            fullHerds.insert(herd, herdId);
+
+        } catch (const std::bad_alloc &) {
             return StatusType::ALLOCATION_ERROR;
         }
-        fullHerds.insert(herd, herdId);
     }
-    herd->insertHorse(horse);
-    horse.lock()->setHerdId(herdId);
+
+    try {
+        horse.lock()->setHerdId(herdId);
+        herd->insertHorse(horse);
+    }
+    catch (const std::bad_alloc &) {
+        return StatusType::ALLOCATION_ERROR;
+    }
 
     return StatusType::SUCCESS;
 }
@@ -100,14 +116,7 @@ StatusType Plains::follow(int horseId, int horseToFollowId) {
         return StatusType::FAILURE;
     }
 
-    auto formerLeader = followingHorse->getLeadingHorse().lock();
     followingHorse->setLeaderHorse(leaderHorse);
-    if (leaderHorse) {
-        leaderHorse->addFollower(followingHorse);
-    }
-    if (formerLeader) {
-        formerLeader->removeFollower(followingHorse);
-    }
 
     return StatusType::SUCCESS;
 }
@@ -124,10 +133,12 @@ StatusType Plains::leave_herd(int horseId) {
 
     auto herd = fullHerds.getValue(horse->getHerdId());
 
-    herd->removeHorse(horse);
-    std::shared_ptr<Horse> newhorse = std::make_shared<Horse>(horseId,
-                                                              horse->getSpeed());
-    if (!newhorse) {
+
+    std::shared_ptr<Horse> newhorse;
+    try {
+        herd->removeHorse(horse);
+        newhorse = std::make_shared<Horse>(horseId, horse->getSpeed());
+    } catch (const std::bad_alloc &) {
         return StatusType::ALLOCATION_ERROR;
     }
     auto horseNode = horses.getNode(horseId);
@@ -137,8 +148,13 @@ StatusType Plains::leave_herd(int horseId) {
     }
 
     if (herd->isEmpty()) {
-        emptyHerds.insert(herd, herd->getId());
-        fullHerds.remove(herd->getId());
+        try {
+            emptyHerds.insert(herd, herd->getId());
+            fullHerds.remove(herd->getId());
+        }
+        catch (const std::bad_alloc &) {
+            return StatusType::ALLOCATION_ERROR;
+        }
     }
 
     return StatusType::SUCCESS;
@@ -195,79 +211,78 @@ output_t<bool> Plains::can_run_together(int herdId) {
         return true;
     }
 
-    Histogram visited(maxHorses);
-    Histogram visited_firstCycle(maxHorses);
+    try {
+        Histogram visited(maxHorses);
+        Histogram visitedPath(maxHorses);
+        std::shared_ptr<Horse> supremeLeader = nullptr;
 
-    int horseCount = 0;
-    int i = 0;
-    std::shared_ptr<Horse> rootLeader = nullptr;
-    for (auto it = herd->getHorses().begin();
-         it != herd->getHorses().end(); ++it) {
-        auto horse = it.operator*();
-        horse->setHerdPosition(i);
-        visited[i] = 0;
-        visited_firstCycle[i] = 0;
-        i++;
-    }
+        int i = 0;
+        // checks if there is a single supremeLeader in the herd and updating the Histograms
+        for (auto it = herd->getHorses().begin();
+             it != herd->getHorses().end(); ++it) {
 
-    for (auto it = herd->getHorses().begin();
-         it != herd->getHorses().end(); ++it) {
-        horseCount++;
-
-        auto horse = it.operator*();
-        if (horseCount > maxHorses) {
-            break;
-        }
-        if (visited_firstCycle[horse->getHerdPosition()] > 0) {
-            break;
-        }
-        visited_firstCycle[horse->getHerdPosition()]++;
-        auto leadingHorse = horse->getLeadingHorse().lock();
-        if (!leadingHorse) {
-            if (rootLeader) {
+            auto horse = it.operator*();
+            if (!horse) {
                 return false;
             }
-            rootLeader = horse;
-        }
-    }
-
-    if (!rootLeader) {
-
-        return false;
-    }
-
-    visited[rootLeader->getHerdPosition()]++;
-    int cycle = -1;
-    for (auto it = herd->getHorses().begin();
-         it != herd->getHorses().end(); ++it) {
-
-        auto horse = it.operator*();
-        if (!horse) {
-            continue;
-        }
-        if (horse->getId() == rootLeader->getId() ||
-            visited[horse->getHerdPosition()] > 0) {
-
-        } else if (!(visited[horse->getHerdPosition()] > 0) &&
-                   visited[horse->getLeadingHorse().lock()->getHerdPosition()] >
-                   0) {
-            visited[horse->getHerdPosition()]++;
-        } else {
-            auto tempHorse = it.operator*();
-            while (tempHorse->getId() !=
-                   rootLeader->getId()) {
-                if (!(visited[tempHorse->getHerdPosition()] > 0)) {
-                    visited[tempHorse->getHerdPosition()]++;
-                }
-                tempHorse = tempHorse->getLeadingHorse().lock();
-                if (cycle > maxHorses * 2) {
+            visited[i] = 0;
+            visitedPath[i] = 0;
+            horse->setHerdPosition(i);
+            i++;
+            auto leadingHorse = horse->getLeadingHorse().lock();
+            if (!leadingHorse) {
+                if (supremeLeader) {
                     return false;
                 }
-                cycle++;
+                supremeLeader = horse;
             }
         }
 
+        if (!supremeLeader) {
+            return false;
+        }
+
+        visited[supremeLeader->getHerdPosition()]++;
+        int path = 0;
+        for (auto it = herd->getHorses().begin();
+             it != herd->getHorses().end(); ++it) {
+            auto horse = it.operator*();
+            if (!horse) {
+                continue;
+            }
+            // if the current horse is the supremeLeader or already visited
+            if (horse->getId() == supremeLeader->getId() ||
+                visited[horse->getHerdPosition()] != 0) {
+                continue;
+            } else {
+                auto tempHorse = it.operator*();
+                path++;
+                while (tempHorse->getId() !=
+                       supremeLeader->getId()) {
+                    // if the horse in the while loop already visited
+                    if (visited[tempHorse->getHerdPosition()] != 0) {
+                        // if the horse is visited in the current path - cycle detected
+                        if (visitedPath[tempHorse->getHerdPosition()] == path) {
+                            return false;
+                        }
+                            //else - this horse has a valid path to the leader(from older loop)
+                        else {
+                            break;
+                        }
+                        // else - updating the horse state to visited and saving the path of the visit
+                    } else {
+                        visited[tempHorse->getHerdPosition()]++;
+                        visitedPath[tempHorse->getHerdPosition()] = path;
+                    }
+                    // moving forward to next leading horse
+                    tempHorse = tempHorse->getLeadingHorse().lock();
+                }
+            }
+        }
+        return true;
     }
-    return true;
+    catch (const std::bad_alloc &) {
+        return StatusType::ALLOCATION_ERROR;
+    }
 }
 

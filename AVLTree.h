@@ -1,6 +1,5 @@
 #pragma once
 
-#include <algorithm>
 #include <iostream>
 #include <memory>
 
@@ -31,13 +30,6 @@ private:
             return 0;
         }
         return node->height;
-    }
-
-    int balanceFactor(const shared_ptr<AVLNode<T>> &node) {
-        if (!node) {
-            return 0;
-        }
-        return height(node->left) - height(node->right);
     }
 
     shared_ptr<AVLNode<T>>
@@ -262,5 +254,12 @@ public:
 
     shared_ptr<AVLNode<T>> getRoot() const {
         return m_root;
+    }
+
+    int balanceFactor(const shared_ptr<AVLNode<T>> &node) {
+        if (!node) {
+            return 0;
+        }
+        return height(node->left) - height(node->right);
     }
 };

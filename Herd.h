@@ -1,9 +1,6 @@
 #pragma once
 
-#include <utility>
-
 #include "Horse.h"
-#include "memory"
 
 class Herd {
     int m_herdId;

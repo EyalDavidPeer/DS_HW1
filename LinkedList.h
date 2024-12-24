@@ -1,7 +1,5 @@
 #pragma once
 
-#include <iostream>
-#include <memory>
 #include "AVLTree.h"
 
 template<typename T>
@@ -86,13 +84,6 @@ public:
         return tree.getValue(index);
     }
 
-    void printInOrder() {
-        tree.printInorder();
-    }
-
-    void clear() {
-        tree = AVLTree<T>();
-    }
 
     Iterator begin() {
         return Iterator(tree.getRoot());

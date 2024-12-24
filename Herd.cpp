@@ -35,12 +35,7 @@ void Herd::removeHorse(const std::weak_ptr<Horse> &horse) {
     if (!m_horses.search(horseId)) {
         return;
     }
-
-    if (auto leaderHorse = horseShared->getLeadingHorse().lock()) {
-        leaderHorse->removeFollower(horse);
-    }
-
-    horseShared->clearFollowers();
+    
     horseShared->setLeaderToNull();
     m_horses.remove(horseId);
     m_n_herd--;
