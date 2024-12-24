@@ -23,7 +23,6 @@ private:
     AVLTree<std::shared_ptr<Horse>> horses;
     AVLTree<std::shared_ptr<Herd>> fullHerds;
     AVLTree<std::shared_ptr<Herd>> emptyHerds;
-    int m_leadsCycle;
 
 public:
     // <DO-NOT-MODIFY> {

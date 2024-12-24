@@ -3,7 +3,7 @@
 
 #include "plains25a1.h"
 
-Plains::Plains() : m_leadsCycle(0) {}
+Plains::Plains() = default;
 
 Plains::~Plains() = default;
 
@@ -183,18 +183,24 @@ output_t<bool> Plains::leads(int horseId, int otherHorseId) {
         destHorse->getHerdId()) {
         return false;
     }
-    m_leadsCycle++;
+    bool result = false;
+    std::shared_ptr<Horse> tempHorse = horse;
     while (horse) {
-        if (horse->getFollowCycle() == m_leadsCycle) {
-            return false;
+        if (horse->getVisited()) {
+            break;
         }
         if (horse->getId() == otherHorseId) {
-            return true;
+            result = true;
         }
-        horse->setFollowCycle(m_leadsCycle);
+        horse->setVisited(true);
         horse = horse->getLeadingHorse().lock();
     }
-    return false;
+    while (tempHorse && tempHorse->getVisited()) {
+        tempHorse->setVisited(false);
+        tempHorse = tempHorse->getLeadingHorse().lock();
+    }
+
+    return result;
 }
 
 output_t<bool> Plains::can_run_together(int herdId) {

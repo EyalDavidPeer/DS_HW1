@@ -9,7 +9,7 @@ class Horse {
     int m_herdId;
     int m_speed;
     int m_herdPos;
-    int m_followCycle;
+    bool visited;
     std::weak_ptr<Horse> m_leadingHorse;
 
 public:
@@ -33,9 +33,9 @@ public:
 
     void setHerdPosition(int inorderPosition);
 
-    int getFollowCycle() const;
+    bool getVisited() const;
 
-    void setFollowCycle(int followCycle);
+    void setVisited(bool value);
 
     void setLeaderToNull();
 

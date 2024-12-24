@@ -2,7 +2,7 @@
 
 Horse::Horse(int horseId, int speed) : m_horseId(horseId), m_herdId(-1),
                                        m_speed(speed), m_herdPos(INITVALUE),
-                                       m_followCycle(INITVALUE) {}
+                                       visited(false) {}
 
 int Horse::getId() const { return m_horseId; }
 
@@ -32,10 +32,10 @@ void Horse::setHerdPosition(int inorderPosition) {
     m_herdPos = inorderPosition;
 }
 
-int Horse::getFollowCycle() const { return m_followCycle; }
+bool Horse::getVisited() const { return visited; }
 
-void Horse::setFollowCycle(int followCycle) {
-    m_followCycle = followCycle;
+void Horse::setVisited(bool value) {
+    visited = value;
 }
 
 void Horse::setLeaderToNull() {
